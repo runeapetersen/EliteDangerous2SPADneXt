@@ -1,0 +1,70 @@
+﻿using System.Linq;
+using System.Threading.Tasks;
+using EliteDangerous2SPADneXt.ChangeHandling;
+using EliteDangerous2SPADneXt.GameState;
+using Xunit;
+
+namespace EliteDangerous2SPADneXt.Tests
+{
+    public class FlagChangeHandlerTests
+    {
+        [Fact]
+        public async Task Flags_InitialState_UpdatesProcessed()
+        {
+            var initialValues = EdFlags.Docked | EdFlags.FlightAssist_Off;
+            var updatedValues = EdFlags.Docked | EdFlags.Being_Interdicted;
+
+            var sut = new FlagChangeHandler<EdFlags>(initialValues);
+            var outcome = sut.HandleUpdate(updatedValues);
+            Assert.Equal(2, outcome.Count());
+            Assert.True(outcome.Any(o =>
+                o.Equals(new UpdatedValue(EnumVariableNameHelper.Build(EdFlags.Being_Interdicted), 1))));
+            Assert.True(outcome.Any(o =>
+                o.Equals(new UpdatedValue(EnumVariableNameHelper.Build(EdFlags.FlightAssist_Off), 0))));
+        }
+
+        [Fact]
+        public async Task Flags_DefaultState_UpdatesProcessed()
+        {
+            var updatedValues = EdFlags.Docked | EdFlags.Being_Interdicted;
+
+            var sut = new FlagChangeHandler<EdFlags>();
+            var outcome = sut.HandleUpdate(updatedValues);
+            Assert.Equal(2, outcome.Count());
+            Assert.True(outcome.Any(o =>
+                o.Equals(new UpdatedValue(EnumVariableNameHelper.Build(EdFlags.Being_Interdicted), 1))));
+            Assert.True(outcome.Any(o => o.Equals(new UpdatedValue(EnumVariableNameHelper.Build(EdFlags.Docked), 1))));
+        }
+
+        [Fact]
+        public async Task Flags_NoChange_NoUpdates()
+        {
+            var updatedValues = EdFlags.Docked;
+            var sut = new FlagChangeHandler<EdFlags>(updatedValues);
+            var outcome = sut.HandleUpdate(updatedValues);
+            Assert.Empty(outcome);
+        }
+
+        [Fact]
+        public async Task Flags_ToZero_UpdatesProcessed()
+        {
+            var initialValues = EdFlags.Docked | EdFlags.Being_Interdicted;
+
+            var sut = new FlagChangeHandler<EdFlags>(initialValues);
+            var outcome = sut.HandleUpdate(0);
+            Assert.Equal(2, outcome.Count());
+            Assert.True(outcome.Any(o =>
+                o.Equals(new UpdatedValue(EnumVariableNameHelper.Build(EdFlags.Being_Interdicted), 0))));
+            Assert.True(outcome.Any(o => o.Equals(new UpdatedValue(EnumVariableNameHelper.Build(EdFlags.Docked), 0))));
+        }
+
+        [Fact]
+        public async Task GetAllVariables()
+        {
+            var sut = new FlagChangeHandler<EdFlags>(0);
+            var result = sut.GetCurrentValues();
+            Assert.Equal(32, result.Count());
+            Assert.All(result, v => Assert.Equal(0, v.Value));
+        }
+    }
+}

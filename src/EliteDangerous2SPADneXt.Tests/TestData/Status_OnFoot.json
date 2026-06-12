@@ -1,0 +1,19 @@
+{
+    "timestamp": "2026-06-06T10:29:43Z",
+    "event": "Status",
+    "Flags": 2097152,
+    "Flags2": 33041,
+    "Oxygen": 1.000000,
+    "Health": 1.000000,
+    "Temperature": 140.728989,
+    "SelectedWeapon": "$humanoid_fists_name;",
+    "SelectedWeapon_Localised": "Unarmed",
+    "Gravity": 0.174982,
+    "LegalState": "Clean",
+    "Latitude": -27.877066,
+    "Longitude": 52.791302,
+    "Heading": 65,
+    "BodyName": "Phaeacia",
+    "PlanetRadius": 396545.000000,
+    "Balance": 0
+}

@@ -1,0 +1,20 @@
+{
+    "timestamp": "2026-06-06T10:36:50Z",
+    "event": "Status",
+    "Flags": 16777224,
+    "Flags2": 0,
+    "Pips": [
+        4,
+        4,
+        4
+    ],
+    "FireGroup": 0,
+    "GuiFocus": 0,
+    "Fuel": {
+        "FuelMain": 2.000000,
+        "FuelReservoir": 0.299839
+    },
+    "Cargo": 0.000000,
+    "LegalState": "Clean",
+    "Balance": 0
+}
