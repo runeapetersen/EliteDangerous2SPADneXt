@@ -38,7 +38,7 @@ namespace EliteDangerous2SPADneXt.ChangeHandling
             {
                 using (var reader = new StreamReader(s))
                 {
-                    var contents = reader.ReadToEnd();
+                    var contents = await reader.ReadToEndAsync();
                     try
                     {
                         var gameStateInfo = ParseGameStateInfo(contents);
@@ -65,6 +65,11 @@ namespace EliteDangerous2SPADneXt.ChangeHandling
                 Converters = { new StringEnumConverter() }
             });
 
+            if (state == null)
+            {
+                throw new ParsingException("Unable to parse the ED game state file.");
+            }
+            
             return state;
         }
     }

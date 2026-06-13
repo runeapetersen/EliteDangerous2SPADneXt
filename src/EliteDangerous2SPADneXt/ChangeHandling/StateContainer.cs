@@ -11,7 +11,7 @@ namespace EliteDangerous2SPADneXt.ChangeHandling
     /// </summary>
     public class StateContainer
     {
-        public IDictionary<string, IValueDetails> StatusValues { get; } = new Dictionary<string, IValueDetails>();
+        private readonly IDictionary<string, IValueDetails> _statusValues = new Dictionary<string, IValueDetails>();
 
         public StateContainer()
         {
@@ -22,35 +22,35 @@ namespace EliteDangerous2SPADneXt.ChangeHandling
 
         private void SeedStatusValues()
         {
-            StatusValues.Add(StatusVariableNames.Pips.One, new ValueDetails<double>());
-            StatusValues.Add(StatusVariableNames.Pips.Two, new ValueDetails<double>());
-            StatusValues.Add(StatusVariableNames.Pips.Three, new ValueDetails<double>());
-            StatusValues.Add(StatusVariableNames.FireGroup, new ValueDetails<double>());
-            StatusValues.Add(StatusVariableNames.GuiFocus, new ValueDetails<double>());
-            StatusValues.Add(StatusVariableNames.Fuel.FuelMain, new ValueDetails<double>());
-            StatusValues.Add(StatusVariableNames.Fuel.FuelReservoir, new ValueDetails<double>());
-            StatusValues.Add(StatusVariableNames.Cargo, new ValueDetails<double>());
-            StatusValues.Add(StatusVariableNames.LegalState, new ValueDetails<string>());
-            StatusValues.Add(StatusVariableNames.Latitude, new ValueDetails<double>());
-            StatusValues.Add(StatusVariableNames.Altitude, new ValueDetails<double>());
-            StatusValues.Add(StatusVariableNames.Longitude, new ValueDetails<double>());
-            StatusValues.Add(StatusVariableNames.Heading, new ValueDetails<double>());
-            StatusValues.Add(StatusVariableNames.BodyName, new ValueDetails<string>());
-            StatusValues.Add(StatusVariableNames.PlanetRadius, new ValueDetails<double>());
-            StatusValues.Add(StatusVariableNames.Balance, new ValueDetails<double>());
-            StatusValues.Add(StatusVariableNames.Destination.Body, new ValueDetails<string>());
-            StatusValues.Add(StatusVariableNames.Destination.Name, new ValueDetails<string>());
-            StatusValues.Add(StatusVariableNames.Destination.System, new ValueDetails<string>());
-            StatusValues.Add(StatusVariableNames.Oxygen, new ValueDetails<double>());
-            StatusValues.Add(StatusVariableNames.Health, new ValueDetails<double>());
-            StatusValues.Add(StatusVariableNames.Temperature, new ValueDetails<double>());
-            StatusValues.Add(StatusVariableNames.SelectedWeapon, new ValueDetails<string>());
-            StatusValues.Add(StatusVariableNames.Gravity, new ValueDetails<double>());
+            _statusValues.Add(StatusVariableNames.Pips.One, new ValueDetails<double>());
+            _statusValues.Add(StatusVariableNames.Pips.Two, new ValueDetails<double>());
+            _statusValues.Add(StatusVariableNames.Pips.Three, new ValueDetails<double>());
+            _statusValues.Add(StatusVariableNames.FireGroup, new ValueDetails<double>());
+            _statusValues.Add(StatusVariableNames.GuiFocus, new ValueDetails<double>());
+            _statusValues.Add(StatusVariableNames.Fuel.FuelMain, new ValueDetails<double>());
+            _statusValues.Add(StatusVariableNames.Fuel.FuelReservoir, new ValueDetails<double>());
+            _statusValues.Add(StatusVariableNames.Cargo, new ValueDetails<double>());
+            _statusValues.Add(StatusVariableNames.LegalState, new ValueDetails<string>());
+            _statusValues.Add(StatusVariableNames.Latitude, new ValueDetails<double>());
+            _statusValues.Add(StatusVariableNames.Altitude, new ValueDetails<double>());
+            _statusValues.Add(StatusVariableNames.Longitude, new ValueDetails<double>());
+            _statusValues.Add(StatusVariableNames.Heading, new ValueDetails<double>());
+            _statusValues.Add(StatusVariableNames.BodyName, new ValueDetails<string>());
+            _statusValues.Add(StatusVariableNames.PlanetRadius, new ValueDetails<double>());
+            _statusValues.Add(StatusVariableNames.Balance, new ValueDetails<double>());
+            _statusValues.Add(StatusVariableNames.Destination.Body, new ValueDetails<string>());
+            _statusValues.Add(StatusVariableNames.Destination.Name, new ValueDetails<string>());
+            _statusValues.Add(StatusVariableNames.Destination.System, new ValueDetails<string>());
+            _statusValues.Add(StatusVariableNames.Oxygen, new ValueDetails<double>());
+            _statusValues.Add(StatusVariableNames.Health, new ValueDetails<double>());
+            _statusValues.Add(StatusVariableNames.Temperature, new ValueDetails<double>());
+            _statusValues.Add(StatusVariableNames.SelectedWeapon, new ValueDetails<string>());
+            _statusValues.Add(StatusVariableNames.Gravity, new ValueDetails<double>());
         }
 
         public IEnumerable<UpdatedValue> GetCurrentValues()
         {
-            return StatusValues.Select(v => new UpdatedValue(v.Key, v.Value.CurrentValue));
+            return _statusValues.Select(v => new UpdatedValue(v.Key, v.Value.CurrentValue));
         }
 
         public IEnumerable<UpdatedValue> Apply(Status status)
@@ -85,7 +85,7 @@ namespace EliteDangerous2SPADneXt.ChangeHandling
 
         private void HandleField(string name, IComparable value, List<UpdatedValue> updateBucket)
         {
-            var isUpdate = StatusValues[name].HandleUpdate(value);
+            var isUpdate = _statusValues[name].HandleUpdate(value);
             if (isUpdate)
                 updateBucket.Add(new UpdatedValue(name, value));
         }

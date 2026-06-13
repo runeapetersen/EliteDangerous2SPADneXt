@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics.CodeAnalysis;
 
 namespace EliteDangerous2SPADneXt.ChangeHandling
 {
@@ -40,12 +39,5 @@ namespace EliteDangerous2SPADneXt.ChangeHandling
                 return ((Name != null ? Name.GetHashCode() : 0) * 397) ^ (Value != null ? Value.GetHashCode() : 0);
             }
         }
-    }
-
-    [SuppressMessage("ReSharper", "InconsistentNaming")]
-    public enum SpadDataType
-    {
-        NUMBER,
-        STRING
     }
 }

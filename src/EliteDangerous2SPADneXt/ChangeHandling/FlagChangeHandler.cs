@@ -43,15 +43,14 @@ namespace EliteDangerous2SPADneXt.ChangeHandling
             }
 
             _allValues = allValues.ToArray();
-            _variableNames = allValues.ToDictionary(v => v, v => EnumVariableNameHelper.Build(v));
+            _variableNames = allValues.ToDictionary(v => v, EnumVariableNameHelper.Build);
         }
 
         public IEnumerable<UpdatedValue> HandleUpdate(T flagsEnum)
         {
             var changedFields = new List<UpdatedValue>();
-            for (int i = 0; i < _allValues.Length; i++)
+            foreach (var v in _allValues)
             {
-                var v = _allValues[i];
                 if (!_currentFlags.HasFlag(v) && flagsEnum.HasFlag(v))
                 {
                     changedFields.Add(new UpdatedValue(_variableNames[v], 1));

@@ -9,8 +9,8 @@ namespace EliteDangerous2SPADneXt.GameState
     /// </summary>
     public class Status
     {
-        public DateTimeOffset TimeStamp { get; set; } // do not map to SPAD. It is presented as a string in SPAD and has no inherent usefullness
-        public string Event { get; set; } // do not map to SPAD. It is presented as a string in SPAD and has no inherent usefullness
+        public DateTimeOffset TimeStamp { get; set; } // do not map to SPAD. It is presented as a string in SPAD and has no inherent usefulness
+        public string Event { get; set; } // do not map to SPAD. It is presented as a string in SPAD and has no inherent usefulness
 
         public EdFlags Flags { get; set; }
         public EdFlags2 Flags2 { get; set; }
@@ -19,7 +19,7 @@ namespace EliteDangerous2SPADneXt.GameState
         public double GuiFocus { get; set; }
         public Fuel Fuel { get; set; }
         public double Cargo { get; set; }
-        public string LegalState { get; set; } // originally conceived as an enum. Going string for simplicity
+        public string LegalState { get; set; }
         public double Latitude { get; set; }
         public double Altitude { get; set; }
         public double Longitude { get; set; }

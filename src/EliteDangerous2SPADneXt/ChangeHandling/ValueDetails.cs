@@ -26,7 +26,7 @@ namespace EliteDangerous2SPADneXt.ChangeHandling
             CurrentValue = defaultValue;
         }
 
-        public IComparable CurrentValue { get; set; }
+        public IComparable CurrentValue { get;  private set; }
 
         public bool HandleUpdate(IComparable newValue)
         {

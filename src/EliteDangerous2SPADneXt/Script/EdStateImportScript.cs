@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.IO;
 using System.IO.Abstractions;
 using System.Linq;
 using System.Threading;
@@ -27,26 +25,32 @@ namespace EliteDangerous2SPADneXt.Script
     /// This class is designed to monitor changes to the Elite Dangerous status file
     /// and handle them through a custom change handler and an asynchronous queue consumer.
     /// It implements <see cref="IScriptAction2"/> to allow script-driven execution
-    /// and integrates with SPAD.neXt's scripting framework by inheriting from
+    /// and integrates with the SPAD.neXt scripting framework by inheriting from
     /// <see cref="ScriptStub"/>.
     /// </remarks>
     // ReSharper disable once UnusedType.Global
     public class EdStateImportScript : ScriptStub, IScriptAction2, IHasID
     {
-        private readonly string _locationOverrideFile = "location_override.json";
-
-        private readonly string _defaultStatusFileLocation = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-            "Saved Games", "Frontier Developments", "Elite Dangerous", "Status.json");
-
-        public int NumberOfParameters => 0;
-
-        private static readonly Guid Guid = Guid.Parse("019ead6a-f32d-75bf-88f4-47ac23832002");
-        public Guid ID => Guid;
+        private static readonly Guid ScriptGuid = Guid.Parse("019ead6a-f32d-75bf-88f4-47ac23832002");
+        private static readonly string LocationOverrideFile = "location_override.json";
+        private readonly string _defaultStatusFileLocation;
         private IDisposable _watcher;
-        private IFileSystem _fileSystem = new FileSystem();
+        private readonly IFileSystem _fileSystem;
         private Channel<Status> _channel;
         private Task<int> _consumer;
+        private readonly CancellationTokenSource _cancellationTokenSource;
+
+        public Guid ID => ScriptGuid;
+        public int NumberOfParameters => 0;
+
+        public EdStateImportScript()
+        {
+            _fileSystem = new FileSystem();
+            _defaultStatusFileLocation = _fileSystem.Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+                "Saved Games", "Frontier Developments", "Elite Dangerous", "Status.json");
+            _cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(CancelToken);
+        }
 
         public void Execute(IApplication app, ISPADEventArgs eventArgs)
         {
@@ -56,18 +60,20 @@ namespace EliteDangerous2SPADneXt.Script
         protected override void InitializeScript()
         {
             var statusFileLocation = _defaultStatusFileLocation;
-            var assemblyLocation = Path.GetDirectoryName(GetType().Assembly.Location);
-            ScriptLogger.Debug($"Assembly location: {assemblyLocation}");
-            var overrideFilePath = Path.Combine(assemblyLocation, _locationOverrideFile);
+            var assemblyLocation = _fileSystem.Path.GetDirectoryName(GetType().Assembly.Location);
+            if (string.IsNullOrEmpty(assemblyLocation))
+                ScriptLogger.Warn("Unable to discern assembly file location.");
+            var overrideFilePath = _fileSystem.Path.Combine(assemblyLocation ?? string.Empty, LocationOverrideFile);
 
-            _channel = Channel.CreateUnbounded<Status>(
-                new UnboundedChannelOptions
+            _channel = Channel.CreateBounded<Status>(
+                new BoundedChannelOptions(20)
                 {
                     SingleReader = true,
                     SingleWriter = false,
+                    FullMode = BoundedChannelFullMode.DropOldest
                 });
 
-            if (!File.Exists(overrideFilePath))
+            if (!_fileSystem.File.Exists(overrideFilePath))
             {
                 ScriptLogger.Warn(
                     $"Unable to read location override file: {overrideFilePath}. Assuming the Elite Dangerous status file location is in the default file path {_defaultStatusFileLocation}");
@@ -76,7 +82,7 @@ namespace EliteDangerous2SPADneXt.Script
             {
                 try
                 {
-                    var overrideFileContents = File.ReadAllText(overrideFilePath);
+                    var overrideFileContents = _fileSystem.File.ReadAllText(overrideFilePath);
                     var overrideFileContentsJson =
                         JsonConvert.DeserializeObject<OverrideFileContents>(overrideFileContents);
                     if (!string.IsNullOrEmpty(overrideFileContentsJson.StatusFilePathOverride))
@@ -94,17 +100,21 @@ namespace EliteDangerous2SPADneXt.Script
             StatusFileChangeHandler changeHandler = new StatusFileChangeHandler(_fileSystem, _channel.Writer);
 
             IFileInfo fi = _fileSystem.FileInfo.New(statusFileLocation);
+            if (fi.Directory == null)
+                throw new ApplicationException("Unable to determine directory for status file");
+
             IFileSystemWatcher watcher = _fileSystem.FileSystemWatcher.New(fi.Directory.FullName, fi.Name);
             watcher.Changed += async (sender, args) => { await ChangeHandling(sender, args, changeHandler); };
+            watcher.Created += async (sender, args) => { await ChangeHandling(sender, args, changeHandler); };
             watcher.EnableRaisingEvents = true;
             _watcher = watcher;
             ScriptLogger.Info($"Watcher initialized for file {fi.FullName}");
 
             //consumerTask
-            _consumer = Task.Run(() => ConsumeQueue(_channel.Reader, CancelToken));
+            _consumer = Task.Run(() => ConsumeQueue(_channel.Reader, _cancellationTokenSource.Token));
         }
 
-        private async Task<int> ConsumeQueue(ChannelReader<Status> channelReader, CancellationToken cancelToken)
+        private async Task<int> ConsumeQueue(ChannelReader<Status> channelReader, CancellationToken cancellationToken)
         {
             ScriptLogger.Info("Consumer task starting");
             StateContainer stateContainer = new StateContainer();
@@ -127,78 +137,73 @@ namespace EliteDangerous2SPADneXt.Script
             }
 
             ScriptLogger.Info("Initial data variables seeded by consumer task.");
+            ScriptLogger.Info("Consumer task waiting for new objects in channel");
 
-            while (!cancelToken.IsCancellationRequested)
+            while (!cancellationToken.IsCancellationRequested)
             {
-                ScriptLogger.Info("Consumer task waiting for new objects on blocking collection");
-                // awaits new objects on blocking collection
-                var goAhead = await channelReader.WaitToReadAsync(cancelToken);
-                ScriptLogger.Info("Wait to read completed...");
-                if (!goAhead) continue;
-                var status = await channelReader.ReadAsync(cancelToken);
-                ScriptLogger.Info("Read completed...");
-
-                ScriptLogger.Info("Consumer task processing new object on blocking collection");
                 try
                 {
-                    var changedStateFields = stateContainer.Apply(status);
-                    var changedFlags = edFlagsChangeHandler.HandleUpdate(status.Flags);
-                    var changedFlags2 = edFlags2ChangeHandler.HandleUpdate(status.Flags2);
-
-                    foreach (var updatedValue in changedStateFields.Concat(changedFlags2).Concat(changedFlags))
+                    while (await channelReader.WaitToReadAsync(cancellationToken))
                     {
-                        dataDefinitions[updatedValue.Name].Monitorable.SetValue(updatedValue.Value, 0, ID);
+                        ScriptLogger.Info("Wait to read completed...");
+                        while (channelReader.TryRead(out var status))
+                        {
+                            ScriptLogger.Info("Consumer task processing new object");
+
+                            var changedStateFields = stateContainer.Apply(status);
+                            var changedFlags = edFlagsChangeHandler.HandleUpdate(status.Flags);
+                            var changedFlags2 = edFlags2ChangeHandler.HandleUpdate(status.Flags2);
+
+                            foreach (var updatedValue in changedStateFields.Concat(changedFlags2).Concat(changedFlags))
+                            {
+                                dataDefinitions[updatedValue.Name].Monitorable.SetValue(updatedValue.Value, 0, ID);
+                            }
+                            
+                            ScriptLogger.Info("Consumer task finished processing new object");
+                        }
                     }
                 }
-                catch (Exception ex)
+                catch(Exception ex)
                 {
-                    ScriptLogger.Error($"Caught exception trying to handle message: {ex.Message}");
-                }
+                    ScriptLogger.Error($@"Caught exception {ex} while trying to consume status message.");
+                    if (ex is TaskCanceledException)
+                    {
+                        break;
+                    }
 
-                ScriptLogger.Info("Consumer task processed new object on blocking collection");
+                    throw;
+                }
             }
 
             ScriptLogger.Info("Consumer task exiting");
             return 0;
         }
 
-        private async Task ChangeHandling(object sender, FileSystemEventArgs eventArgs,
+        private async Task ChangeHandling(object _, System.IO.FileSystemEventArgs eventArgs,
             StatusFileChangeHandler changeHandler)
         {
             ScriptLogger.Info("Change handler handling file change");
-            if (CancelToken.IsCancellationRequested)
-            {
-                return;
-            }
 
-            if (eventArgs.ChangeType == WatcherChangeTypes.Changed ||
-                eventArgs.ChangeType == WatcherChangeTypes.Created)
+            if (eventArgs.ChangeType == System.IO.WatcherChangeTypes.Changed ||
+                eventArgs.ChangeType == System.IO.WatcherChangeTypes.Created)
             {
                 ScriptLogger.Info($"Status file changed. Reloading.");
                 var statusFileInfo = _fileSystem.FileInfo.New(eventArgs.FullPath);
-                await changeHandler.ProcessFileUpdate(statusFileInfo);
-            }
-        }
-
-        private async Task
-            action(CancellationToken token) // no longer relevant. Equivalent logic is handled in the file watcher callback
-        {
-            var random = new Random();
-            var fileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                "Saved Games", "Frontier Developments", "Elite Dangerous", "Status.json");
-
-            var _someAmazingField = GetOrCreateScriptDataValue("AMAZING_VAR", 0);
-            while (!token.IsCancellationRequested)
-            {
-                await Task.Delay(5000, token); // wait for script to terminate
-                _someAmazingField.Monitorable.SetValue(random.Next(1, 1000), 0, ID);
-                FileInfo info = new System.IO.FileInfo(fileName);
-                ScriptLogger.Info($"File {fileName} exists: {info.Exists} and is {info.Length} bytes");
+                try
+                {
+                    await changeHandler.ProcessFileUpdate(statusFileInfo);
+                }
+                catch(Exception ex)
+                {
+                    ScriptLogger.Error($@"Caught exception {ex} while trying to process status file.");
+                    throw;
+                }
             }
         }
 
         protected override void DeinitializeScript()
         {
+            _channel.Writer.TryComplete();
             if (_watcher == null) return;
             try
             {
@@ -208,6 +213,9 @@ namespace EliteDangerous2SPADneXt.Script
             {
                 _watcher = null;
             }
+
+            _cancellationTokenSource.Cancel();
+            _cancellationTokenSource.Dispose();
         }
 
         protected override string ScriptDataPrefix => "ED2SPADNEXT";
