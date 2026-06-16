@@ -12,7 +12,7 @@ namespace EliteDangerous2SPADneXt.Tests
         [MemberData(nameof(TestData_String))]
         public async Task ValueDetails_String_HandleUpdate(string oldValue, string newValue, bool expectedResult)
         {
-            var sut = new ValueDetails<string>(oldValue);
+            var sut = new StringValueDetails(oldValue);
             var result = sut.HandleUpdate(newValue);
             Assert.Equal(expectedResult, result);
             Assert.Equal(newValue, sut.CurrentValue);
@@ -28,7 +28,7 @@ namespace EliteDangerous2SPADneXt.Tests
         [MemberData(nameof(TestData_Double))]
         public async Task ValueDetails_Double_HandleUpdate(double oldValue, double newValue, bool expectedResult)
         {
-            var sut = new ValueDetails<double>(oldValue);
+            var sut = new DoubleValueDetails(oldValue);
             var result = sut.HandleUpdate(newValue);
             Assert.Equal(expectedResult, result);
             Assert.Equal(newValue, sut.CurrentValue);
@@ -41,9 +41,9 @@ namespace EliteDangerous2SPADneXt.Tests
         }
 
         [Fact]
-        public async Task ValueDetails_Integer_FailScenario()
+        public async Task ValueDetails_Double_FailScenario()
         {
-            var sut = new ValueDetails<double>();
+            var sut = new DoubleValueDetails(0);
             Action act = () => sut.HandleUpdate(null);
             Assert.Throws<ArgumentException>(act);
         }

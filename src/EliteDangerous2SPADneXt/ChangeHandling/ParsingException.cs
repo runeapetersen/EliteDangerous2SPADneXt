@@ -7,7 +7,7 @@ namespace EliteDangerous2SPADneXt.ChangeHandling
     /// </summary>
     /// <remarks>
     /// This exception is used to indicate an error encountered when attempting to parse data,
-    /// such as a game state file that contains invalid or improperly formatted content.
+    /// such as a game state file that contains invalid or improper formatted content.
     /// </remarks>
     public class ParsingException : Exception
     {

@@ -7,16 +7,13 @@
     /// </summary>
     public static class StatusVariableNames
     {
-        public static string TimeStamp => nameof(Status.TimeStamp);
-        public static string Event => nameof(Status.Event);
-
         // note: EdFlags enumerations are elided from this convenience class.
         // The names are provided by the enumeration change handlers.
         public static class Pips
         {
-            public static string One => $"{nameof(Status.Pips)}_{nameof(One)}";
-            public static string Two => $"{nameof(Status.Pips)}_{nameof(Two)}";
-            public static string Three => $"{nameof(Status.Pips)}_{nameof(Three)}";
+            public static string Sys => $"{nameof(Status.Pips)}_{nameof(Sys)}";
+            public static string Eng => $"{nameof(Status.Pips)}_{nameof(Eng)}";
+            public static string Wep => $"{nameof(Status.Pips)}_{nameof(Wep)}";
         }
 
         public static string FireGroup => nameof(Status.FireGroup);

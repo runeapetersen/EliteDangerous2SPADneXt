@@ -19,7 +19,7 @@ namespace EliteDangerous2SPADneXt.GameState
         public double GuiFocus { get; set; }
         public Fuel Fuel { get; set; }
         public double Cargo { get; set; }
-        public string LegalState { get; set; }
+        public LegalState LegalState { get; set; }
         public double Latitude { get; set; }
         public double Altitude { get; set; }
         public double Longitude { get; set; }

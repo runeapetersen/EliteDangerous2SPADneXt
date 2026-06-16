@@ -1,5 +1,8 @@
-﻿using System.Linq;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
+using System.Windows.Input;
 using EliteDangerous2SPADneXt.ChangeHandling;
 using EliteDangerous2SPADneXt.GameState;
 using Xunit;
@@ -8,6 +11,13 @@ namespace EliteDangerous2SPADneXt.Tests
 {
     public class FlagChangeHandlerTests
     {
+        private readonly UpdatedValueComparer _comparer;
+
+        public FlagChangeHandlerTests()
+        {
+            _comparer = new UpdatedValueComparer();
+        }
+        
         [Fact]
         public async Task Flags_InitialState_UpdatesProcessed()
         {
@@ -18,9 +28,26 @@ namespace EliteDangerous2SPADneXt.Tests
             var outcome = sut.HandleUpdate(updatedValues);
             Assert.Equal(2, outcome.Count());
             Assert.True(outcome.Any(o =>
-                o.Equals(new UpdatedValue(EnumVariableNameHelper.Build(EdFlags.Being_Interdicted), 1))));
+                _comparer.Compare(o, new UpdatedValue(EnumVariableNameHelper.Build(EdFlags.Being_Interdicted), 1, SpadDataType.BOOL))==0));
             Assert.True(outcome.Any(o =>
-                o.Equals(new UpdatedValue(EnumVariableNameHelper.Build(EdFlags.FlightAssist_Off), 0))));
+                _comparer.Compare(o, new UpdatedValue(EnumVariableNameHelper.Build(EdFlags.FlightAssist_Off), 0, SpadDataType.BOOL))==0));
+        }
+
+        internal class UpdatedValueComparer : IComparer<UpdatedValue>
+        {
+            public int Compare(UpdatedValue x, UpdatedValue y)
+            {
+                if (ReferenceEquals(x, y)) return 0;
+                if (y is null) return 1;
+                if (x is null) return -1;
+                if (x.Value.GetType() != y.Value.GetType())
+                    return -1;
+                if (x.Equals(y))
+                    return 0;
+                var nameComparison = string.Compare(x.Name, y.Name, StringComparison.Ordinal);
+                if (nameComparison != 0) return nameComparison;
+                return x.DataType.CompareTo(y.DataType);
+            }
         }
 
         [Fact]
@@ -32,8 +59,8 @@ namespace EliteDangerous2SPADneXt.Tests
             var outcome = sut.HandleUpdate(updatedValues);
             Assert.Equal(2, outcome.Count());
             Assert.True(outcome.Any(o =>
-                o.Equals(new UpdatedValue(EnumVariableNameHelper.Build(EdFlags.Being_Interdicted), 1))));
-            Assert.True(outcome.Any(o => o.Equals(new UpdatedValue(EnumVariableNameHelper.Build(EdFlags.Docked), 1))));
+                _comparer.Compare(o, new UpdatedValue(EnumVariableNameHelper.Build(EdFlags.Being_Interdicted), 1, SpadDataType.BOOL))==0));
+            Assert.True(outcome.Any(o => _comparer.Compare(o, new UpdatedValue(EnumVariableNameHelper.Build(EdFlags.Docked), 1, SpadDataType.BOOL))==0));
         }
 
         [Fact]
@@ -54,8 +81,8 @@ namespace EliteDangerous2SPADneXt.Tests
             var outcome = sut.HandleUpdate(0);
             Assert.Equal(2, outcome.Count());
             Assert.True(outcome.Any(o =>
-                o.Equals(new UpdatedValue(EnumVariableNameHelper.Build(EdFlags.Being_Interdicted), 0))));
-            Assert.True(outcome.Any(o => o.Equals(new UpdatedValue(EnumVariableNameHelper.Build(EdFlags.Docked), 0))));
+                _comparer.Compare(o, new UpdatedValue(EnumVariableNameHelper.Build(EdFlags.Being_Interdicted), 0, SpadDataType.BOOL))==0));
+            Assert.True(outcome.Any(o => _comparer.Compare(o, new UpdatedValue(EnumVariableNameHelper.Build(EdFlags.Docked), 0, SpadDataType.BOOL))==0));
         }
 
         [Fact]

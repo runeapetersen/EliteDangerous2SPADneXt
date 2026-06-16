@@ -6,6 +6,7 @@ namespace EliteDangerous2SPADneXt.ChangeHandling
     public enum SpadDataType
     {
         NUMBER,
-        STRING
+        STRING,
+        BOOL
     }
 }

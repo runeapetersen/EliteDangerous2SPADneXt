@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO.Abstractions;
-using System.Linq;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -10,7 +9,6 @@ using EliteDangerous2SPADneXt.Configuration;
 using EliteDangerous2SPADneXt.GameState;
 using Newtonsoft.Json;
 using SPAD.neXt.Interfaces;
-using SPAD.neXt.Interfaces.Configuration;
 using SPAD.neXt.Interfaces.Events;
 using SPAD.neXt.Interfaces.Scripting;
 using SPAD.neXt.Interfaces.Scripting.Stubs;
@@ -31,16 +29,19 @@ namespace EliteDangerous2SPADneXt.Script
     // ReSharper disable once UnusedType.Global
     public class EdStateImportScript : ScriptStub, IScriptAction2, IHasID
     {
-        private static readonly Guid ScriptGuid = Guid.Parse("019ead6a-f32d-75bf-88f4-47ac23832002");
         private static readonly string LocationOverrideFile = "location_override.json";
+        private const int ChannelCapacity = 20;
+
         private readonly string _defaultStatusFileLocation;
-        private IDisposable _watcher;
         private readonly IFileSystem _fileSystem;
-        private Channel<Status> _channel;
-        private Task<int> _consumer;
         private readonly CancellationTokenSource _cancellationTokenSource;
 
-        public Guid ID => ScriptGuid;
+        private IDisposable _watcher;
+        private Task<int> _consumer;
+        private Channel<Status> _channel;
+        private StatusConsumer _statusConsumer;
+
+        public Guid ID => Guid.Parse("019ead6a-f32d-75bf-88f4-47ac23832002");
         public int NumberOfParameters => 0;
 
         public EdStateImportScript()
@@ -59,152 +60,169 @@ namespace EliteDangerous2SPADneXt.Script
 
         protected override void InitializeScript()
         {
-            var statusFileLocation = _defaultStatusFileLocation;
-            var assemblyLocation = _fileSystem.Path.GetDirectoryName(GetType().Assembly.Location);
-            if (string.IsNullOrEmpty(assemblyLocation))
-                ScriptLogger.Warn("Unable to discern assembly file location.");
-            var overrideFilePath = _fileSystem.Path.Combine(assemblyLocation ?? string.Empty, LocationOverrideFile);
+            var statusFileLocation = ResolveStatusFileLocation();
 
-            _channel = Channel.CreateBounded<Status>(
-                new BoundedChannelOptions(20)
+            _channel = CreateStatusChannel();
+
+            var changeHandler = new StatusFileChangeHandler(_fileSystem, _channel.Writer, ScriptLogger.CreateChildLogger(nameof(StatusFileChangeHandler)));
+            
+            // Pre-seed the system with default values...
+            try
+            {
+                Task.Run(() => changeHandler.ProcessStatus(new Status { TimeStamp = DateTimeOffset.Now }, _cancellationTokenSource.Token))
+                    .Wait(1000, _cancellationTokenSource.Token);
+            }
+            catch (Exception ex)
+            {
+                ScriptLogger.Warn($"Failed to pre-seed channel with initial status: {ex.Message}");
+            }
+            
+            _watcher = CreateStatusFileWatcher(statusFileLocation, changeHandler);
+
+            _statusConsumer = new StatusConsumer(
+                ID,
+                GetOrCreateScriptDataValue,
+                ScriptLogger.CreateChildLogger(nameof(StatusConsumer)));
+            _consumer = _statusConsumer.Start(_channel.Reader, _cancellationTokenSource.Token);
+        }
+
+        private string ResolveStatusFileLocation()
+        {
+            var overrideFilePath = GetOverrideFilePath();
+
+            if (!_fileSystem.File.Exists(overrideFilePath))
+            {
+                LogOverrideFileUnavailable(overrideFilePath);
+                return _defaultStatusFileLocation;
+            }
+
+            return ReadStatusFileLocationOverride(overrideFilePath) ?? _defaultStatusFileLocation;
+        }
+        
+        private string GetOverrideFilePath()
+        {
+            var assemblyLocation = _fileSystem.Path.GetDirectoryName(GetType().Assembly.Location);
+
+            if (string.IsNullOrEmpty(assemblyLocation))
+            {
+                ScriptLogger.Warn("Unable to discern assembly file location.");
+            }
+
+            return _fileSystem.Path.Combine(assemblyLocation ?? string.Empty, LocationOverrideFile);
+        }
+
+        private string ReadStatusFileLocationOverride(string overrideFilePath)
+        {
+            try
+            {
+                var overrideFileContents = _fileSystem.File.ReadAllText(overrideFilePath);
+                var overrideFileContentsJson =
+                    JsonConvert.DeserializeObject<OverrideFileContents>(overrideFileContents);
+
+                return string.IsNullOrEmpty(overrideFileContentsJson?.StatusFilePathOverride)
+                    ? null
+                    : overrideFileContentsJson.StatusFilePathOverride;
+            }
+            catch (Exception ex)
+            {
+                ScriptLogger.Warn(
+                    $"Caught exception '{ex}'. Unable to read location override file: {overrideFilePath}. Assuming the Elite Dangerous status file location is in the default file path {_defaultStatusFileLocation}");
+
+                return null;
+            }
+        }
+
+        private void LogOverrideFileUnavailable(string overrideFilePath)
+        {
+            ScriptLogger.Warn(
+                $"Unable to read location override file: {overrideFilePath}. Assuming the Elite Dangerous status file location is in the default file path {_defaultStatusFileLocation}");
+        }
+
+        private static Channel<Status> CreateStatusChannel()
+        {
+            return Channel.CreateBounded<Status>(
+                new BoundedChannelOptions(ChannelCapacity)
                 {
                     SingleReader = true,
                     SingleWriter = false,
                     FullMode = BoundedChannelFullMode.DropOldest
                 });
-
-            if (!_fileSystem.File.Exists(overrideFilePath))
-            {
-                ScriptLogger.Warn(
-                    $"Unable to read location override file: {overrideFilePath}. Assuming the Elite Dangerous status file location is in the default file path {_defaultStatusFileLocation}");
-            }
-            else
-            {
-                try
-                {
-                    var overrideFileContents = _fileSystem.File.ReadAllText(overrideFilePath);
-                    var overrideFileContentsJson =
-                        JsonConvert.DeserializeObject<OverrideFileContents>(overrideFileContents);
-                    if (!string.IsNullOrEmpty(overrideFileContentsJson.StatusFilePathOverride))
-                    {
-                        statusFileLocation = overrideFileContentsJson.StatusFilePathOverride;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    ScriptLogger.Warn(
-                        $"Caught exception '{ex.Message}'. Unable to read location override file: {overrideFilePath}. Assuming the Elite Dangerous status file location is in the default file path {_defaultStatusFileLocation}");
-                }
-            }
-
-            StatusFileChangeHandler changeHandler = new StatusFileChangeHandler(_fileSystem, _channel.Writer);
-
-            IFileInfo fi = _fileSystem.FileInfo.New(statusFileLocation);
-            if (fi.Directory == null)
-                throw new ApplicationException("Unable to determine directory for status file");
-
-            IFileSystemWatcher watcher = _fileSystem.FileSystemWatcher.New(fi.Directory.FullName, fi.Name);
-            watcher.Changed += async (sender, args) => { await ChangeHandling(sender, args, changeHandler); };
-            watcher.Created += async (sender, args) => { await ChangeHandling(sender, args, changeHandler); };
-            watcher.EnableRaisingEvents = true;
-            _watcher = watcher;
-            ScriptLogger.Info($"Watcher initialized for file {fi.FullName}");
-
-            //consumerTask
-            _consumer = Task.Run(() => ConsumeQueue(_channel.Reader, _cancellationTokenSource.Token));
         }
 
-        private async Task<int> ConsumeQueue(ChannelReader<Status> channelReader, CancellationToken cancellationToken)
-        {
-            ScriptLogger.Info("Consumer task starting");
-            StateContainer stateContainer = new StateContainer();
-            FlagChangeHandler<EdFlags> edFlagsChangeHandler = new FlagChangeHandler<EdFlags>(0);
-            FlagChangeHandler<EdFlags2> edFlags2ChangeHandler = new FlagChangeHandler<EdFlags2>(0);
-
-            var initialDataPackage = stateContainer.GetCurrentValues()
-                .Concat(edFlagsChangeHandler.GetCurrentValues())
-                .Concat(edFlags2ChangeHandler.GetCurrentValues());
-
-            Dictionary<string, IDataDefinition> dataDefinitions = new Dictionary<string, IDataDefinition>();
-
-            foreach (var updatedValue in initialDataPackage)
-            {
-                var newDefinition = GetOrCreateScriptDataValue(updatedValue.Name,
-                    updatedValue.DataType == SpadDataType.NUMBER ? (object)0 : string.Empty);
-                newDefinition.UnitsName = updatedValue.DataType.ToString();
-                newDefinition.Monitorable.SetValue(updatedValue.Value, 0, ID);
-                dataDefinitions.Add(updatedValue.Name, newDefinition);
-            }
-
-            ScriptLogger.Info("Initial data variables seeded by consumer task.");
-            ScriptLogger.Info("Consumer task waiting for new objects in channel");
-
-            while (!cancellationToken.IsCancellationRequested)
-            {
-                try
-                {
-                    while (await channelReader.WaitToReadAsync(cancellationToken))
-                    {
-                        ScriptLogger.Info("Wait to read completed...");
-                        while (channelReader.TryRead(out var status))
-                        {
-                            ScriptLogger.Info("Consumer task processing new object");
-
-                            var changedStateFields = stateContainer.Apply(status);
-                            var changedFlags = edFlagsChangeHandler.HandleUpdate(status.Flags);
-                            var changedFlags2 = edFlags2ChangeHandler.HandleUpdate(status.Flags2);
-
-                            foreach (var updatedValue in changedStateFields.Concat(changedFlags2).Concat(changedFlags))
-                            {
-                                dataDefinitions[updatedValue.Name].Monitorable.SetValue(updatedValue.Value, 0, ID);
-                            }
-                            
-                            ScriptLogger.Info("Consumer task finished processing new object");
-                        }
-                    }
-                }
-                catch(Exception ex)
-                {
-                    ScriptLogger.Error($@"Caught exception {ex} while trying to consume status message.");
-                    if (ex is TaskCanceledException)
-                    {
-                        break;
-                    }
-
-                    throw;
-                }
-            }
-
-            ScriptLogger.Info("Consumer task exiting");
-            return 0;
-        }
-
-        private async Task ChangeHandling(object _, System.IO.FileSystemEventArgs eventArgs,
+        private IDisposable CreateStatusFileWatcher(
+            string statusFileLocation,
             StatusFileChangeHandler changeHandler)
         {
-            ScriptLogger.Info("Change handler handling file change");
+            var statusFileInfo = _fileSystem.FileInfo.New(statusFileLocation);
 
-            if (eventArgs.ChangeType == System.IO.WatcherChangeTypes.Changed ||
-                eventArgs.ChangeType == System.IO.WatcherChangeTypes.Created)
+            if (statusFileInfo.Directory == null)
             {
-                ScriptLogger.Info($"Status file changed. Reloading.");
-                var statusFileInfo = _fileSystem.FileInfo.New(eventArgs.FullPath);
-                try
-                {
-                    await changeHandler.ProcessFileUpdate(statusFileInfo);
-                }
-                catch(Exception ex)
-                {
-                    ScriptLogger.Error($@"Caught exception {ex} while trying to process status file.");
-                    throw;
-                }
+                throw new ApplicationException("Unable to determine directory for status file");
             }
+
+            var watcher = _fileSystem.FileSystemWatcher.New(
+                statusFileInfo.Directory.FullName,
+                statusFileInfo.Name);
+
+            watcher.Changed += async (sender, args) => await ChangeHandling(sender, args, changeHandler);
+            //watcher.Created += async (sender, args) => await ChangeHandling(sender, args, changeHandler);
+            watcher.EnableRaisingEvents = true;
+
+            ScriptLogger.Info($"Watcher initialized for file {statusFileInfo.FullName}");
+
+            return watcher;
+        }
+
+        private async Task ChangeHandling(
+            object _,
+            System.IO.FileSystemEventArgs eventArgs,
+            StatusFileChangeHandler changeHandler)
+        {
+            if (!IsRelevantChange(eventArgs.ChangeType))
+            {
+                return;
+            }
+
+            ScriptLogger.Info($"Change handler handling file change for {eventArgs.FullPath}");
+
+            var statusFileInfo = _fileSystem.FileInfo.New(eventArgs.FullPath);
+            
+            try
+            {
+                await changeHandler.ProcessFileUpdate(statusFileInfo, _cancellationTokenSource.Token);
+            }
+            catch (Exception ex)
+            {
+                ScriptLogger.Error($@"Caught exception {ex} while trying to process status file.");
+            }
+        }
+
+        private static bool IsRelevantChange(System.IO.WatcherChangeTypes changeType)
+        {
+            return changeType == System.IO.WatcherChangeTypes.Changed ||
+                   changeType == System.IO.WatcherChangeTypes.Created;
         }
 
         protected override void DeinitializeScript()
         {
-            _channel.Writer.TryComplete();
-            if (_watcher == null) return;
+            _channel?.Writer.TryComplete();
+
+            DisposeWatcher();
+
+            if (!_cancellationTokenSource.IsCancellationRequested)
+            {
+                _cancellationTokenSource.Cancel();
+                _cancellationTokenSource.Dispose();
+            }
+        }
+
+        private void DisposeWatcher()
+        {
+            if (_watcher == null)
+            {
+                return;
+            }
+
             try
             {
                 _watcher.Dispose();
@@ -213,16 +231,13 @@ namespace EliteDangerous2SPADneXt.Script
             {
                 _watcher = null;
             }
-
-            _cancellationTokenSource.Cancel();
-            _cancellationTokenSource.Dispose();
         }
 
         protected override string ScriptDataPrefix => "ED2SPADNEXT";
 
         public void Execute(IApplication app, List<IEventActionParameter> actionParameters)
         {
-            // do nothing? This script will auto-run and perform very little work if ED is not running and generating new state files
+            // no-op
         }
     }
 }

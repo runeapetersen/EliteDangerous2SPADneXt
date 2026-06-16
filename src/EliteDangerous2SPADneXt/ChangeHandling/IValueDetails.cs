@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace EliteDangerous2SPADneXt.ChangeHandling
+﻿namespace EliteDangerous2SPADneXt.ChangeHandling
 {
     /// <summary>
     /// Represents an interface for managing and monitoring value changes.
@@ -8,7 +6,8 @@ namespace EliteDangerous2SPADneXt.ChangeHandling
     /// </summary>
     public interface IValueDetails
     {
-        bool HandleUpdate(IComparable newValue);
-        IComparable CurrentValue { get; }
+        bool HandleUpdate(object newValue);
+        object CurrentValue { get; }
+        SpadDataType DataType { get; }
     }
 }

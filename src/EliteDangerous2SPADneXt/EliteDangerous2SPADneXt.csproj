@@ -87,6 +87,7 @@
         <Compile Include="ChangeHandling\UpdatedValue.cs" />
         <Compile Include="ChangeHandling\ValueDetails.cs" />
         <Compile Include="Configuration\OverrideFileContents.cs" />
+        <Compile Include="GameState\LegalState.cs" />
         <Compile Include="GameState\Status.cs" />
         <Compile Include="GameState\Destination.cs" />
         <Compile Include="GameState\EdFlags.cs" />
@@ -95,6 +96,7 @@
         <Compile Include="GameState\StatusVariableNames.cs" />
         <Compile Include="Properties\AssemblyInfo.cs"/>
         <Compile Include="Script\EdStateImportScript.cs" />
+        <Compile Include="Script\StatusConsumer.cs" />
     </ItemGroup>
     <ItemGroup>
       <None Include="packages.config" />

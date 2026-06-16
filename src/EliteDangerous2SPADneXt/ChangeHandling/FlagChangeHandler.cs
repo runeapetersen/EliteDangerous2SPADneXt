@@ -18,11 +18,11 @@ namespace EliteDangerous2SPADneXt.ChangeHandling
     /// </exception>
     public class FlagChangeHandler<T> where T : Enum
     {
-        private readonly T _currentFlags;
+        private T _currentFlags;
         private readonly T[] _allValues;
         private readonly Dictionary<T, string> _variableNames;
 
-        public FlagChangeHandler(T initialValues) : this()
+        public FlagChangeHandler(T initialValues = default) : this()
         {
             _currentFlags = initialValues;
         }
@@ -46,27 +46,35 @@ namespace EliteDangerous2SPADneXt.ChangeHandling
             _variableNames = allValues.ToDictionary(v => v, EnumVariableNameHelper.Build);
         }
 
-        public IEnumerable<UpdatedValue> HandleUpdate(T flagsEnum)
+        public IEnumerable<UpdatedValue> HandleUpdate(T flagsEnum, bool isFirstRun = false)
         {
+            if (isFirstRun)
+                return GetCurrentValues();
+
             var changedFields = new List<UpdatedValue>();
             foreach (var v in _allValues)
             {
-                if (!_currentFlags.HasFlag(v) && flagsEnum.HasFlag(v))
+                bool wasSet = _currentFlags.HasFlag(v);
+                bool isSet = flagsEnum.HasFlag(v);
+                    
+                if (!wasSet && isSet)
                 {
-                    changedFields.Add(new UpdatedValue(_variableNames[v], 1));
+                    changedFields.Add(new UpdatedValue(_variableNames[v], 1, SpadDataType.BOOL));
                 }
-                else if (_currentFlags.HasFlag(v) && !flagsEnum.HasFlag(v))
+                else if (wasSet && !isSet)
                 {
-                    changedFields.Add(new UpdatedValue(_variableNames[v], 0));
+                    changedFields.Add(new UpdatedValue(_variableNames[v], 0, SpadDataType.BOOL));
                 }
             }
+
+            _currentFlags = flagsEnum; // Commit the new state after processing
 
             return changedFields;
         }
 
         public IEnumerable<UpdatedValue> GetCurrentValues()
         {
-            return _variableNames.Select(v => new UpdatedValue(v.Value, _currentFlags.HasFlag(v.Key) ? 1 : 0));
+            return _variableNames.Select(v => new UpdatedValue(v.Value, _currentFlags.HasFlag(v.Key) ? 1 : 0, SpadDataType.BOOL));
         }
     }
 }

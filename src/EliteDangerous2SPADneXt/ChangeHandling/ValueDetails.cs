@@ -2,45 +2,70 @@
 
 namespace EliteDangerous2SPADneXt.ChangeHandling
 {
-    /// <summary>
-    /// Represents a generic class for handling and monitoring value changes
-    /// for a specific type.
-    /// </summary>
-    /// <typeparam name="T">
-    /// The type of the value being handled. The type must implement the
-    /// <see cref="IComparable"/> interface.
-    /// </typeparam>
-    public class ValueDetails<T> : IValueDetails where T : IComparable
+    public class StringValueDetails : IValueDetails
     {
-        public ValueDetails()
+        public object CurrentValue { get; private set; }
+        public SpadDataType DataType => SpadDataType.STRING;
+
+        public StringValueDetails(object defaultValue = null)
         {
-            var wrappedType = typeof(T);
-            if (wrappedType == typeof(string))
-                CurrentValue = string.Empty;
-            else
-                CurrentValue = default(T);
+            CurrentValue = defaultValue ?? throw new ArgumentException("Default value cannot be null.", nameof(defaultValue));
         }
-        
-        public ValueDetails(T defaultValue = default(T))
+
+        public bool HandleUpdate(object newValue)
+        {
+            if (!(newValue is string stringValue))
+                throw new ArgumentException("Expected a string value.", nameof(newValue));
+
+            if (string.CompareOrdinal((string)CurrentValue, stringValue) == 0)
+                return false;
+
+            CurrentValue = stringValue;
+            return true;
+        }
+    }
+    public class DoubleValueDetails : IValueDetails
+    {
+        public object CurrentValue { get; private set; }
+        public SpadDataType DataType => SpadDataType.NUMBER;
+
+        public DoubleValueDetails(object defaultValue)
         {
             CurrentValue = defaultValue;
         }
 
-        public IComparable CurrentValue { get;  private set; }
-
-        public bool HandleUpdate(IComparable newValue)
+        public bool HandleUpdate(object newValue)
         {
-            if (newValue == null)
-                throw new ArgumentException(
-                    "New value cannot be null when nullability is disallowed for this instance.");
-            if (!newValue.GetType().IsAssignableFrom(WrappedType))
-                throw new ArgumentException("New value type does not match the default value type.");
-            if (newValue.CompareTo(CurrentValue) == 0)
+            if (!(newValue is double doubleValue))
+                throw new ArgumentException("Expected a double value.", nameof(newValue));
+
+            if (((double)CurrentValue).CompareTo(doubleValue) == 0)
                 return false;
-            CurrentValue = newValue;
+
+            CurrentValue = doubleValue;
             return true;
         }
+    }
+    public class BoolValueDetails : IValueDetails
+    {
+        public object CurrentValue { get; private set; }
+        public SpadDataType DataType => SpadDataType.BOOL;
 
-        private Type WrappedType => typeof(T);
+        public BoolValueDetails(object defaultValue)
+        {
+            CurrentValue = defaultValue;
+        }
+
+        public bool HandleUpdate(object newValue)
+        {
+            if (!(newValue is bool boolValue))
+                throw new ArgumentException("Expected a boolean value.", nameof(newValue));
+
+            if (((bool)CurrentValue).Equals(boolValue))
+                return false;
+
+            CurrentValue = boolValue;
+            return true;
+        }
     }
 }
