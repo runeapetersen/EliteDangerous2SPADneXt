@@ -48,7 +48,7 @@ namespace EliteDangerous2SPADneXt.ChangeHandling
                         var gameStateInfo = ParseGameStateInfo(contents);
                         if (gameStateInfo != null)
                         {
-                            await ProcessStatus(gameStateInfo, cancellationToken);
+                            await ProcessStatusAsync(gameStateInfo, cancellationToken);
                         }
                     }
                     catch (Exception ex)
@@ -60,10 +60,15 @@ namespace EliteDangerous2SPADneXt.ChangeHandling
             }
         }
 
-        public async Task ProcessStatus(Status gameStateInfo, CancellationToken cancellationToken)
+        public async Task ProcessStatusAsync(Status gameStateInfo, CancellationToken cancellationToken = default)
         {
             await _channelWriter.WaitToWriteAsync(cancellationToken);
             await _channelWriter.WriteAsync(gameStateInfo, cancellationToken);
+        }
+        
+        public void ProcessStatus(Status gameStateInfo)
+        {
+            ProcessStatusAsync(gameStateInfo).GetAwaiter().GetResult();
         }
 
         private Status ParseGameStateInfo(string contents)

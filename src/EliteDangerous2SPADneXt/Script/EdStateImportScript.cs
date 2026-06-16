@@ -55,7 +55,12 @@ namespace EliteDangerous2SPADneXt.Script
 
         public void Execute(IApplication app, ISPADEventArgs eventArgs)
         {
-            throw new NotImplementedException($"Only using {nameof(IScriptAction2)} execution logic");
+            // Should do nothing. Script is intended to run without user interaction.
+        }
+        
+        public void Execute(IApplication app, List<IEventActionParameter> actionParameters)
+        {
+            // Should do nothing. Script is intended to run without user interaction.
         }
 
         protected override void InitializeScript()
@@ -69,8 +74,7 @@ namespace EliteDangerous2SPADneXt.Script
             // Pre-seed the system with default values...
             try
             {
-                Task.Run(() => changeHandler.ProcessStatus(new Status { TimeStamp = DateTimeOffset.Now }, _cancellationTokenSource.Token))
-                    .Wait(1000, _cancellationTokenSource.Token);
+                changeHandler.ProcessStatus(new Status { TimeStamp = DateTimeOffset.Now });
             }
             catch (Exception ex)
             {
@@ -234,10 +238,5 @@ namespace EliteDangerous2SPADneXt.Script
         }
 
         protected override string ScriptDataPrefix => "ED2SPADNEXT";
-
-        public void Execute(IApplication app, List<IEventActionParameter> actionParameters)
-        {
-            // no-op
-        }
     }
 }
