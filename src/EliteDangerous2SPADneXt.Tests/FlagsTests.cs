@@ -17,7 +17,7 @@ namespace EliteDangerous2SPADneXt.Tests
         {
             _comparer = new UpdatedValueComparer();
         }
-        
+
         [Fact]
         public async Task Flags_InitialState_UpdatesProcessed()
         {
@@ -27,13 +27,15 @@ namespace EliteDangerous2SPADneXt.Tests
             var sut = new FlagChangeHandler<EdFlags>(initialValues);
             var outcome = sut.HandleUpdate(updatedValues);
             Assert.Equal(2, outcome.Count());
-            Assert.True(outcome.Any(o =>
-                _comparer.Compare(o, new UpdatedValue(EnumVariableNameHelper.Build(EdFlags.Being_Interdicted), 1, SpadDataType.BOOL))==0));
-            Assert.True(outcome.Any(o =>
-                _comparer.Compare(o, new UpdatedValue(EnumVariableNameHelper.Build(EdFlags.FlightAssist_Off), 0, SpadDataType.BOOL))==0));
+            Assert.Contains(
+                new UpdatedValue(EnumVariableNameHelper.Build(EdFlags.Being_Interdicted), 1, SpadDataType.BOOL),
+                outcome, _comparer);
+            Assert.Contains(
+                new UpdatedValue(EnumVariableNameHelper.Build(EdFlags.FlightAssist_Off), 0, SpadDataType.BOOL), outcome,
+                _comparer);
         }
 
-        internal class UpdatedValueComparer : IComparer<UpdatedValue>
+        internal class UpdatedValueComparer : IComparer<UpdatedValue>, IEqualityComparer<UpdatedValue>
         {
             public int Compare(UpdatedValue x, UpdatedValue y)
             {
@@ -48,6 +50,31 @@ namespace EliteDangerous2SPADneXt.Tests
                 if (nameComparison != 0) return nameComparison;
                 return x.DataType.CompareTo(y.DataType);
             }
+
+            public bool Equals(UpdatedValue x, UpdatedValue y)
+            {
+                if (ReferenceEquals(x, y)) return true;
+                if (x is null) return false;
+                if (y is null) return false;
+                if (x.GetType() != y.GetType()) return false;
+                return x.Name == y.Name && Equals(x.Value, y.Value) && x.DataType == y.DataType;
+            }
+
+            public int GetHashCode(UpdatedValue obj)
+            {
+                if (obj == null) return 0;
+
+                // Standard prime multiplier pattern compatible with C# 7.3 / .NET Framework 4.8
+                unchecked
+                {
+                    int hash = 17;
+                    hash = hash * 31 + (obj.Name != null ? obj.Name.GetHashCode() : 0);
+                    hash = hash * 31 + (obj.Value != null ? obj.Value.GetHashCode() : 0);
+                    hash = hash * 31 + obj.DataType.GetHashCode();
+
+                    return hash;
+                }
+            }
         }
 
         [Fact]
@@ -58,9 +85,11 @@ namespace EliteDangerous2SPADneXt.Tests
             var sut = new FlagChangeHandler<EdFlags>();
             var outcome = sut.HandleUpdate(updatedValues);
             Assert.Equal(2, outcome.Count());
-            Assert.True(outcome.Any(o =>
-                _comparer.Compare(o, new UpdatedValue(EnumVariableNameHelper.Build(EdFlags.Being_Interdicted), 1, SpadDataType.BOOL))==0));
-            Assert.True(outcome.Any(o => _comparer.Compare(o, new UpdatedValue(EnumVariableNameHelper.Build(EdFlags.Docked), 1, SpadDataType.BOOL))==0));
+            Assert.Contains(
+                new UpdatedValue(EnumVariableNameHelper.Build(EdFlags.Being_Interdicted), 1, SpadDataType.BOOL),
+                outcome, _comparer);
+            Assert.Contains(new UpdatedValue(EnumVariableNameHelper.Build(EdFlags.Docked), 1, SpadDataType.BOOL),
+                outcome, _comparer);
         }
 
         [Fact]
@@ -80,9 +109,11 @@ namespace EliteDangerous2SPADneXt.Tests
             var sut = new FlagChangeHandler<EdFlags>(initialValues);
             var outcome = sut.HandleUpdate(0);
             Assert.Equal(2, outcome.Count());
-            Assert.True(outcome.Any(o =>
-                _comparer.Compare(o, new UpdatedValue(EnumVariableNameHelper.Build(EdFlags.Being_Interdicted), 0, SpadDataType.BOOL))==0));
-            Assert.True(outcome.Any(o => _comparer.Compare(o, new UpdatedValue(EnumVariableNameHelper.Build(EdFlags.Docked), 0, SpadDataType.BOOL))==0));
+            Assert.Contains(
+                new UpdatedValue(EnumVariableNameHelper.Build(EdFlags.Being_Interdicted), 0, SpadDataType.BOOL),
+                outcome, _comparer);
+            Assert.Contains(new UpdatedValue(EnumVariableNameHelper.Build(EdFlags.Docked), 0, SpadDataType.BOOL),
+                outcome, _comparer);
         }
 
         [Fact]

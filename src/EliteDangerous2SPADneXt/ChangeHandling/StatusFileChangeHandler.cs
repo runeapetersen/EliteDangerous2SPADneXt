@@ -1,12 +1,12 @@
 ﻿using System;
 using System.IO;
-using System.IO.Abstractions;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
+using EliteDangerous2SPADneXt.FileSystemAbstractions;
 using EliteDangerous2SPADneXt.GameState;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 using SPAD.neXt.Interfaces.Logging;
 
 namespace EliteDangerous2SPADneXt.ChangeHandling
@@ -17,12 +17,17 @@ namespace EliteDangerous2SPADneXt.ChangeHandling
     /// </summary>
     public class StatusFileChangeHandler
     {
-        private readonly IFileSystem _fileSystem;
+        private readonly IFsoService _fileSystem;
         private readonly ChannelWriter<Status> _channelWriter;
         private readonly ILogger _logger;
 
+        private JsonSerializerOptions _jsonSerializerOptions = new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true,
+            Converters = { new JsonStringEnumConverter() }
+        };
 
-        public StatusFileChangeHandler(IFileSystem fileSystem,
+        public StatusFileChangeHandler(IFsoService fileSystem,
             ChannelWriter<Status> channelWriter,
             ILogger logger)
         {
@@ -31,14 +36,15 @@ namespace EliteDangerous2SPADneXt.ChangeHandling
             _logger = logger;
         }
 
-        public async Task ProcessFileUpdate(IFileInfo file, CancellationToken cancellationToken)
+        public async Task ProcessFileUpdate(string filePath, CancellationToken cancellationToken)
         {
-            if (!file.Exists)
+            if (!_fileSystem.FileExists(filePath))
             {
-                throw new FileNotFoundException($"File not found: {file.FullName}");
+                throw new FileNotFoundException($"File not found: {filePath}");
             }
 
-            using (Stream s = _fileSystem.FileStream.New(file.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (Stream s = _fileSystem.CreateFileStream(filePath, FileMode.Open, FileAccess.Read,
+                       FileShare.ReadWrite))
             {
                 using (var reader = new StreamReader(s))
                 {
@@ -65,7 +71,7 @@ namespace EliteDangerous2SPADneXt.ChangeHandling
             await _channelWriter.WaitToWriteAsync(cancellationToken);
             await _channelWriter.WriteAsync(gameStateInfo, cancellationToken);
         }
-        
+
         public void ProcessStatus(Status gameStateInfo)
         {
             ProcessStatusAsync(gameStateInfo).GetAwaiter().GetResult();
@@ -78,16 +84,13 @@ namespace EliteDangerous2SPADneXt.ChangeHandling
                 return null;
             }
 
-            var state = JsonConvert.DeserializeObject<Status>(contents, new JsonSerializerSettings
-            {
-                Converters = { new StringEnumConverter() }
-            });
+            var state = JsonSerializer.Deserialize<Status>(contents, _jsonSerializerOptions);
 
             if (state == null)
             {
                 throw new ParsingException("Unable to parse the ED game state file.");
             }
-            
+
             return state;
         }
     }

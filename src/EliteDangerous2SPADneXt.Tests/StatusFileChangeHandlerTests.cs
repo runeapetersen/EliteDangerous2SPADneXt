@@ -14,7 +14,8 @@ namespace EliteDangerous2SPADneXt.Tests
 {
     public class StatusFileChangeHandlerTests
     {
-        private Mock<ILogger> _loggerMock = new Mock<ILogger>(); 
+        private Mock<ILogger> _loggerMock = new Mock<ILogger>();
+
         [Fact]
         public async Task CanProcessFileUpdates_NonExistingFile_Throws()
         {
@@ -22,10 +23,11 @@ namespace EliteDangerous2SPADneXt.Tests
             {
                 { @"c:\myfile.txt", new MockFileData("Testing is meh.") },
             });
+            var fso = new FakeFsoService(fileSystem);
             var channel = Channel.CreateUnbounded<Status>();
-            var sut = new StatusFileChangeHandler(fileSystem, channel.Writer, _loggerMock.Object);
+            var sut = new StatusFileChangeHandler(fso, channel.Writer, _loggerMock.Object);
             await Assert.ThrowsAsync<FileNotFoundException>(() =>
-                sut.ProcessFileUpdate(fileSystem.FileInfo.New(@"d:\not_a_file.json"), CancellationToken.None));
+                sut.ProcessFileUpdate(@"d:\not_a_file.json", CancellationToken.None));
         }
 
         public static IEnumerable<object[]> TestData()
@@ -36,6 +38,7 @@ namespace EliteDangerous2SPADneXt.Tests
             yield return new object[] { @"TestData\Status_OnFoot.json" };
         }
 
+
         [Theory]
         [MemberData(nameof(TestData))]
         public async Task CanProcessFileUpdates_ExistingFile_DoesNotThrow(string testData)
@@ -45,12 +48,13 @@ namespace EliteDangerous2SPADneXt.Tests
             {
                 { @"c:\myfile.txt", new MockFileData(testFileContent) }
             });
+            var fso = new FakeFsoService(fileSystem);
             var channel = Channel.CreateUnbounded<Status>();
-            var sut = new StatusFileChangeHandler(fileSystem, channel.Writer, _loggerMock.Object);
-            await sut.ProcessFileUpdate(fileSystem.FileInfo.New(@"c:\myfile.txt"), CancellationToken.None);
-            Assert.True(channel.Reader.Count==1);
+            var sut = new StatusFileChangeHandler(fso, channel.Writer, _loggerMock.Object);
+            await sut.ProcessFileUpdate(@"c:\myfile.txt", CancellationToken.None);
+            Assert.True(channel.Reader.Count == 1);
         }
-        
+
         [Fact]
         public async Task CanProcessFileUpdates_ExistingFile_CannotParse_NothingProduced()
         {
@@ -58,9 +62,10 @@ namespace EliteDangerous2SPADneXt.Tests
             {
                 { @"c:\myfile.txt", new MockFileData("Testing is meh.") },
             });
+            var fso = new FakeFsoService(fileSystem);
             var channel = Channel.CreateUnbounded<Status>();
-            var sut = new StatusFileChangeHandler(fileSystem, channel.Writer, _loggerMock.Object);
-            Assert.True(channel.Reader.Count==0);
+            var sut = new StatusFileChangeHandler(fso, channel.Writer, _loggerMock.Object);
+            Assert.True(channel.Reader.Count == 0);
         }
     }
 }

@@ -1,13 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO.Abstractions;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using EliteDangerous2SPADneXt.ChangeHandling;
 using EliteDangerous2SPADneXt.Configuration;
+using EliteDangerous2SPADneXt.FileSystemAbstractions;
 using EliteDangerous2SPADneXt.GameState;
-using Newtonsoft.Json;
 using SPAD.neXt.Interfaces;
 using SPAD.neXt.Interfaces.Events;
 using SPAD.neXt.Interfaces.Scripting;
@@ -33,7 +33,7 @@ namespace EliteDangerous2SPADneXt.Script
         private const int ChannelCapacity = 20;
 
         private readonly string _defaultStatusFileLocation;
-        private readonly IFileSystem _fileSystem;
+        private readonly IFsoService _fileSystem;
         private readonly CancellationTokenSource _cancellationTokenSource;
 
         private IDisposable _watcher;
@@ -46,8 +46,8 @@ namespace EliteDangerous2SPADneXt.Script
 
         public EdStateImportScript()
         {
-            _fileSystem = new FileSystem();
-            _defaultStatusFileLocation = _fileSystem.Path.Combine(
+            _fileSystem = new FsoService();
+            _defaultStatusFileLocation = _fileSystem.CombinePath(
                 Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
                 "Saved Games", "Frontier Developments", "Elite Dangerous", "Status.json");
             _cancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(CancelToken);
@@ -94,7 +94,7 @@ namespace EliteDangerous2SPADneXt.Script
         {
             var overrideFilePath = GetOverrideFilePath();
 
-            if (!_fileSystem.File.Exists(overrideFilePath))
+            if (!_fileSystem.FileExists(overrideFilePath))
             {
                 LogOverrideFileUnavailable(overrideFilePath);
                 return _defaultStatusFileLocation;
@@ -105,23 +105,23 @@ namespace EliteDangerous2SPADneXt.Script
         
         private string GetOverrideFilePath()
         {
-            var assemblyLocation = _fileSystem.Path.GetDirectoryName(GetType().Assembly.Location);
+            var assemblyLocation = _fileSystem.GetDirectoryName(GetType().Assembly.Location);
 
             if (string.IsNullOrEmpty(assemblyLocation))
             {
                 ScriptLogger.Warn("Unable to discern assembly file location.");
             }
 
-            return _fileSystem.Path.Combine(assemblyLocation ?? string.Empty, LocationOverrideFile);
+            return _fileSystem.CombinePath(assemblyLocation ?? string.Empty, LocationOverrideFile);
         }
 
         private string ReadStatusFileLocationOverride(string overrideFilePath)
         {
             try
             {
-                var overrideFileContents = _fileSystem.File.ReadAllText(overrideFilePath);
+                var overrideFileContents = _fileSystem.ReadAllText(overrideFilePath);
                 var overrideFileContentsJson =
-                    JsonConvert.DeserializeObject<OverrideFileContents>(overrideFileContents);
+                    JsonSerializer.Deserialize<OverrideFileContents>(overrideFileContents);
 
                 return string.IsNullOrEmpty(overrideFileContentsJson?.StatusFilePathOverride)
                     ? null
@@ -157,14 +157,14 @@ namespace EliteDangerous2SPADneXt.Script
             string statusFileLocation,
             StatusFileChangeHandler changeHandler)
         {
-            var statusFileInfo = _fileSystem.FileInfo.New(statusFileLocation);
+            var statusFileInfo = new System.IO.FileInfo(statusFileLocation);
 
             if (statusFileInfo.Directory == null)
             {
                 throw new ApplicationException("Unable to determine directory for status file");
             }
 
-            var watcher = _fileSystem.FileSystemWatcher.New(
+            var watcher = new System.IO.FileSystemWatcher(
                 statusFileInfo.Directory.FullName,
                 statusFileInfo.Name);
 
@@ -189,11 +189,9 @@ namespace EliteDangerous2SPADneXt.Script
 
             ScriptLogger.Info($"Change handler handling file change for {eventArgs.FullPath}");
 
-            var statusFileInfo = _fileSystem.FileInfo.New(eventArgs.FullPath);
-            
             try
             {
-                await changeHandler.ProcessFileUpdate(statusFileInfo, _cancellationTokenSource.Token);
+                await changeHandler.ProcessFileUpdate(eventArgs.FullPath, _cancellationTokenSource.Token);
             }
             catch (Exception ex)
             {

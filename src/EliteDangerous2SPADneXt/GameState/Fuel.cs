@@ -1,11 +1,10 @@
-using JetBrains.Annotations;
+// ReSharper disable ClassNeverInstantiated.Global
 
 namespace EliteDangerous2SPADneXt.GameState
 {
     /// <summary>
     /// Represents the fuel-related attributes of a ship in the game.
     /// </summary>
-    [UsedImplicitly]
     public class Fuel
     {
         public double FuelMain { get; set; }

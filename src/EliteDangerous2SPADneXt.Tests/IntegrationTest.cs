@@ -45,7 +45,7 @@ namespace EliteDangerous2SPADneXt.Tests
                 },
                 _loggerMock.Object);
 
-            await channel.Writer.WriteAsync(new Status());
+            await channel.Writer.WriteAsync(new Status(), TestContext.Current.CancellationToken);
             var contents =
                 @"{ ""timestamp"":""2026-06-14T22:06:29Z"", ""event"":""Status"", ""Flags"":16842765, ""Flags2"":0, ""Pips"":[4,4,4], ""FireGroup"":0, ""GuiFocus"":0, ""Fuel"":{ ""FuelMain"":2.000000, ""FuelReservoir"":0.300000 }, ""Cargo"":0.000000, ""LegalState"":""Clean"", ""Balance"":0 }";
             var state = JsonConvert.DeserializeObject<Status>(contents, new JsonSerializerSettings
@@ -53,7 +53,7 @@ namespace EliteDangerous2SPADneXt.Tests
                 Converters = { new StringEnumConverter() }
             });
             
-            await channel.Writer.WriteAsync(state);
+            await channel.Writer.WriteAsync(state, TestContext.Current.CancellationToken);
             
             channel.Writer.Complete();
 

@@ -73,32 +73,32 @@ namespace EliteDangerous2SPADneXt.ChangeHandling
         }
 
         private static readonly (string Name, Func<Status, object> Extractor, SpadDataType targetDataType)[] FieldMap =
-            {
-                (StatusVariableNames.Pips.Sys, s => s.Pips?[0] ?? 0.0, SpadDataType.NUMBER),
-                (StatusVariableNames.Pips.Eng, s => s.Pips?[1] ?? 0.0, SpadDataType.NUMBER),
-                (StatusVariableNames.Pips.Wep, s => s.Pips?[2] ?? 0.0, SpadDataType.NUMBER),
-                (StatusVariableNames.FireGroup, s => s.FireGroup, SpadDataType.NUMBER),
-                (StatusVariableNames.GuiFocus, s => s.GuiFocus, SpadDataType.NUMBER),
-                (StatusVariableNames.Fuel.FuelMain, s => s.Fuel?.FuelMain ?? 0.0, SpadDataType.NUMBER),
-                (StatusVariableNames.Fuel.FuelReservoir, s => s.Fuel?.FuelReservoir ?? 0.0, SpadDataType.NUMBER),
-                (StatusVariableNames.Cargo, s => s.Cargo, SpadDataType.NUMBER),
-                (StatusVariableNames.LegalState, s => s.LegalState.ToString(), SpadDataType.NUMBER),
-                (StatusVariableNames.Latitude, s => s.Latitude, SpadDataType.NUMBER),
-                (StatusVariableNames.Altitude, s => s.Altitude, SpadDataType.NUMBER),
-                (StatusVariableNames.Longitude, s => s.Longitude, SpadDataType.NUMBER),
-                (StatusVariableNames.Heading, s => s.Heading, SpadDataType.NUMBER),
-                (StatusVariableNames.BodyName, s => s.BodyName ?? string.Empty, SpadDataType.STRING),
-                (StatusVariableNames.PlanetRadius, s => s.PlanetRadius, SpadDataType.NUMBER),
-                (StatusVariableNames.Balance, s => s.Balance, SpadDataType.NUMBER),
-                (StatusVariableNames.Destination.Name, s => s.Destination?.Name ?? string.Empty, SpadDataType.STRING),
-                (StatusVariableNames.Destination.System, s => s.Destination?.System ?? string.Empty, SpadDataType.STRING),
-                (StatusVariableNames.Destination.Body, s => s.Destination?.Body ?? string.Empty, SpadDataType.STRING),
-                (StatusVariableNames.Oxygen, s => s.Oxygen, SpadDataType.NUMBER),
-                (StatusVariableNames.Health, s => s.Health, SpadDataType.NUMBER),
-                (StatusVariableNames.Temperature, s => s.Temperature, SpadDataType.NUMBER),
-                (StatusVariableNames.SelectedWeapon, s => s.SelectedWeapon ?? string.Empty, SpadDataType.STRING),
-                (StatusVariableNames.Gravity, s => s.Gravity, SpadDataType.NUMBER)
-                // add further mappings as necessary
-            };
+        {
+            (StatusVariableNames.Pips.Sys, s => s.Pips?[0] ?? 0.0, SpadDataType.NUMBER),
+            (StatusVariableNames.Pips.Eng, s => s.Pips?[1] ?? 0.0, SpadDataType.NUMBER),
+            (StatusVariableNames.Pips.Wep, s => s.Pips?[2] ?? 0.0, SpadDataType.NUMBER),
+            (StatusVariableNames.FireGroup, s => s.FireGroup, SpadDataType.NUMBER),
+            (StatusVariableNames.GuiFocus, s => s.GuiFocus, SpadDataType.NUMBER),
+            (StatusVariableNames.Fuel.FuelMain, s => s.Fuel?.FuelMain ?? 0.0, SpadDataType.NUMBER),
+            (StatusVariableNames.Fuel.FuelReservoir, s => s.Fuel?.FuelReservoir ?? 0.0, SpadDataType.NUMBER),
+            (StatusVariableNames.Cargo, s => s.Cargo, SpadDataType.NUMBER),
+            (StatusVariableNames.LegalState, s => s.LegalState.ToString(), SpadDataType.STRING),
+            (StatusVariableNames.Latitude, s => s.Latitude, SpadDataType.NUMBER),
+            (StatusVariableNames.Altitude, s => s.Altitude, SpadDataType.NUMBER),
+            (StatusVariableNames.Longitude, s => s.Longitude, SpadDataType.NUMBER),
+            (StatusVariableNames.Heading, s => s.Heading, SpadDataType.NUMBER),
+            (StatusVariableNames.BodyName, s => s.BodyName ?? string.Empty, SpadDataType.STRING),
+            (StatusVariableNames.PlanetRadius, s => s.PlanetRadius, SpadDataType.NUMBER),
+            (StatusVariableNames.Balance, s => s.Balance, SpadDataType.NUMBER),
+            (StatusVariableNames.Destination.Name, s => s.Destination?.Name ?? string.Empty, SpadDataType.STRING),
+            (StatusVariableNames.Destination.System, s => s.Destination?.System ?? string.Empty, SpadDataType.STRING),
+            (StatusVariableNames.Destination.Body, s => s.Destination?.Body ?? string.Empty, SpadDataType.STRING),
+            (StatusVariableNames.Oxygen, s => s.Oxygen, SpadDataType.NUMBER),
+            (StatusVariableNames.Health, s => s.Health, SpadDataType.NUMBER),
+            (StatusVariableNames.Temperature, s => s.Temperature, SpadDataType.NUMBER),
+            (StatusVariableNames.SelectedWeapon, s => s.SelectedWeapon ?? string.Empty, SpadDataType.STRING),
+            (StatusVariableNames.Gravity, s => s.Gravity, SpadDataType.NUMBER)
+            // add further mappings as necessary
+        };
     }
 }

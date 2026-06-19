@@ -1,6 +1,4 @@
-﻿using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
-// ReSharper disable UnusedMember.Global
+﻿// ReSharper disable UnusedMember.Global
 
 namespace EliteDangerous2SPADneXt.GameState
 {
@@ -10,7 +8,6 @@ namespace EliteDangerous2SPADneXt.GameState
     /// <remarks>
     /// Tracks compliance with local laws, faction alignments, bounty statuses, and special Thargoid designations.
     /// </remarks>
-    [JsonConverter(typeof(StringEnumConverter))]
     public enum LegalState
     {
         None,

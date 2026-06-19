@@ -1,4 +1,6 @@
 <Solution>
-  <Project Path="EliteDangerous2SPADneXt.Tests/EliteDangerous2SPADneXt.Tests.csproj" />
+  <Project Path="EliteDangerous2SPADneXt.Tests/EliteDangerous2SPADneXt.Tests.csproj">
+    <Build Solution="Release|*" Project="false" />
+  </Project>
   <Project Path="EliteDangerous2SPADneXt/EliteDangerous2SPADneXt.csproj" />
 </Solution>
