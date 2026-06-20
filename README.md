@@ -1,4 +1,4 @@
-# EliteDangerous to SPAD.neXt Integration Script
+# Elite Dangerous to SPAD.neXt Integration Script
 
 ## Purpose
 This script bridges the gap between **Elite Dangerous** and **SPAD.neXt** by automatically importing real-time game state data into SPAD's local variable environment. It eliminates the need for external middleware to read game status, allowing you to create highly responsive UI automations (Stream Decks, physical gauges) directly within SPAD.neXt rules based on live game data.
