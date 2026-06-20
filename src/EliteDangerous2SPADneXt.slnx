@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/SolutionItems/">
+    <File Path="../README.md" />
+  </Folder>
   <Project Path="EliteDangerous2SPADneXt.Tests/EliteDangerous2SPADneXt.Tests.csproj">
     <Build Solution="Release|*" Project="false" />
   </Project>

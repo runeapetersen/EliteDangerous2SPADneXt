@@ -1,19 +1,31 @@
-# EliteDangerous2SPADneXt
-An add-on script for SPAD.neXt which will import Elite Dangerous game state data into SPAD local variables.
+# EliteDangerous to SPAD.neXt Integration Script
 
-# Who is this for?
-Intended to allow SPAD.neXt owners to create interesting UI automations for physical or virtual devices and let these trigger off Elite Dangerous state changes. It was created from a personal desire to use SPAD.neXt for creating cool Stream Deck setups which can reflect game state by changing colour, updating text and images, etc.
+## Purpose
+This script bridges the gap between **Elite Dangerous** and **SPAD.neXt** by automatically importing real-time game state data into SPAD's local variable environment. It eliminates the need for external middleware to read game status, allowing you to create highly responsive UI automations (Stream Decks, physical gauges) directly within SPAD.neXt rules based on live game data.
+See https://doc.elitedangereuse.fr/Status%20File/ for more details on the state data provided by Elite Dangerous.
 
-# What does it do?
-Elite Dangerous exports certain game state information to the file "%userprofile%\Saved Games\Frontier Developments\Elite Dangerous\Status.json". This file is continuously being updated while the game runs.
+## Highlights
+- **Real-Time Monitoring**: Automatically detects updates to the Elite Dangerous `Status.json` file and processes new values immediately.
+- **Seamless Integration**: Maps game state variables directly into SPAD.neXt Data Variables using a distinct prefix (`ED2SPADNEXT`).
+- **Zero-Touch Operation**: Designed to run passively in the background; no manual triggers are required for data ingestion.
+- **Flexible Configuration**: Supports custom status file paths via an optional JSON override file, useful for multi-location setups or testing.
 
-The script will attempt to locate the Status.json file continuously being written by Elite Dangerous. Every time the file changes any updated values are written to SPAD.neXt Data variables in the LOCAL Session scope. 
+## Installation:
+1.  **Place in SPAD.neXt Addons directory**: Unpack the DLL files into the SPAD.neXt Addons directory, normally located in `%userprofile%\Documents\SPAD.neXt\Addons`. Create the Addons directory if it does not exist. SPAD.neXt will automatically load the assembly on startup and initialize the script.
 
-It is possible to point to an alternative Status.json file location by editing the <filename tbd>.json file. No other configurations can be defined in the file.
+## Usage
+1.  **Understand Data Mapping**: The script writes data to SPAD.neXt Variables in the `LOCAL` session scope. All variables created by this add-on are prefixed with `ED2SPADNEXT_`.
+    -   *Example*: If your game's `Status.json` indicates that the Docked state is set, it will appear in SPAD as `LOCAL:ED2SPADNEXT_EDFLAGS_DOCKED` with a value of `1`.
+2.  **Monitor Game State**: Once installed, open the SPAD.neXt variables panel or create rules to inspect the new variables. You can now use standard SPAD Logic and triggers based on this imported data (e.g., "IF `LOCAL:ED2SPADNEXT_EDFLAGS_LANDING_GEAR_DOWN` is True, THEN turn on a physical indicator light").
+3.  **Advanced Configuration**: By default, the script monitors `%userprofile%\Saved Games\Frontier Developments\Elite Dangerous\Status.json`. To change this location:
+    -   Locate the `location_override.json` file in the same directory as the script DLL.
+    -   Edit it to specify your custom path:
+```json
+{
+  "StatusFilePathOverride": "C:\\CustomPath\\To\\Elite Dangerous\\Status.json"
+}
+```
 
-Note: This add-on will write to the SPAD.neXt application log (normally residing in "%appdata%\SPAD.neXt\logs\". If for some reason the add-on is not working as expected check this log for error messages. <elaboration tbd>
-
-Note that data only flows from Elite Dangerous into SPAD.neXt. This plugin does not allow for instrumenting Elite Dangerous from SPAD.neXt actions directly. To do this efficiently, you might want to use VJoy or some sort of middleware layer which can represent a device understood by both applications.
-
-# Usage
-Files are copied to "%userprofile%\Documents\SPAD.neXt\Addons\" (create the Addons folder if missing). SPAD.neXt will load the file at runtime and initialize the script. No further steps need to be taken by the user. It should just work.
+## Limitations
+The script reads data exclusively from Elite Dangerous; it cannot send commands back into the game (use VJoy or similar middleware for that). Additionally, the variable mapping depends entirely on the structure of Frontier's `Status.json`; if they change the export format in future game updates, this script may require adjustments to remain compatible.
+The code was tested and developed on Windows 11 and might not work on other operating systems.
