@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using System.Windows.Input;
 using EliteDangerous2SPADneXt.ChangeHandling;
 using EliteDangerous2SPADneXt.GameState;
 using Xunit;

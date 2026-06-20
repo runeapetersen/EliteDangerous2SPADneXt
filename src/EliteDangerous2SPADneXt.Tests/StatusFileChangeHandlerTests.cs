@@ -23,7 +23,7 @@ namespace EliteDangerous2SPADneXt.Tests
             {
                 { @"c:\myfile.txt", new MockFileData("Testing is meh.") },
             });
-            var fso = new FakeFsoService(fileSystem);
+            var fso = new FakeFileSystem(fileSystem);
             var channel = Channel.CreateUnbounded<Status>();
             var sut = new StatusFileChangeHandler(fso, channel.Writer, _loggerMock.Object);
             await Assert.ThrowsAsync<FileNotFoundException>(() =>
@@ -48,7 +48,7 @@ namespace EliteDangerous2SPADneXt.Tests
             {
                 { @"c:\myfile.txt", new MockFileData(testFileContent) }
             });
-            var fso = new FakeFsoService(fileSystem);
+            var fso = new FakeFileSystem(fileSystem);
             var channel = Channel.CreateUnbounded<Status>();
             var sut = new StatusFileChangeHandler(fso, channel.Writer, _loggerMock.Object);
             await sut.ProcessFileUpdate(@"c:\myfile.txt", CancellationToken.None);
@@ -62,7 +62,7 @@ namespace EliteDangerous2SPADneXt.Tests
             {
                 { @"c:\myfile.txt", new MockFileData("Testing is meh.") },
             });
-            var fso = new FakeFsoService(fileSystem);
+            var fso = new FakeFileSystem(fileSystem);
             var channel = Channel.CreateUnbounded<Status>();
             var sut = new StatusFileChangeHandler(fso, channel.Writer, _loggerMock.Object);
             Assert.True(channel.Reader.Count == 0);

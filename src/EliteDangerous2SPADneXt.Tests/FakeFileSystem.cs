@@ -1,14 +1,13 @@
 ﻿using System.IO;
-using System.IO.Abstractions;
-using EliteDangerous2SPADneXt.FileSystemAbstractions;
+using IFileSystem = EliteDangerous2SPADneXt.FileSystemAbstractions.IFileSystem;
 
 namespace EliteDangerous2SPADneXt.Tests
 {
-    public class FakeFsoService : IFsoService
+    public class FakeFileSystem : IFileSystem
     {
-        private readonly IFileSystem _fileSystem;
+        private readonly System.IO.Abstractions.IFileSystem _fileSystem;
 
-        public FakeFsoService(IFileSystem fileSystem)
+        public FakeFileSystem(System.IO.Abstractions.IFileSystem fileSystem)
         {
             _fileSystem = fileSystem;
         }

@@ -17,17 +17,17 @@ namespace EliteDangerous2SPADneXt.ChangeHandling
     /// </summary>
     public class StatusFileChangeHandler
     {
-        private readonly IFsoService _fileSystem;
+        private readonly IFileSystem _fileSystem;
         private readonly ChannelWriter<Status> _channelWriter;
         private readonly ILogger _logger;
 
-        private JsonSerializerOptions _jsonSerializerOptions = new JsonSerializerOptions
+        private readonly JsonSerializerOptions _jsonSerializerOptions = new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true,
             Converters = { new JsonStringEnumConverter() }
         };
 
-        public StatusFileChangeHandler(IFsoService fileSystem,
+        public StatusFileChangeHandler(IFileSystem fileSystem,
             ChannelWriter<Status> channelWriter,
             ILogger logger)
         {
@@ -66,7 +66,7 @@ namespace EliteDangerous2SPADneXt.ChangeHandling
             }
         }
 
-        public async Task ProcessStatusAsync(Status gameStateInfo, CancellationToken cancellationToken = default)
+        private async Task ProcessStatusAsync(Status gameStateInfo, CancellationToken cancellationToken = default)
         {
             await _channelWriter.WaitToWriteAsync(cancellationToken);
             await _channelWriter.WriteAsync(gameStateInfo, cancellationToken);

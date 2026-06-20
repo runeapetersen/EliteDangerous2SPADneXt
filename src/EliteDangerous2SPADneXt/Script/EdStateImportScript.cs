@@ -33,7 +33,7 @@ namespace EliteDangerous2SPADneXt.Script
         private const int ChannelCapacity = 20;
 
         private readonly string _defaultStatusFileLocation;
-        private readonly IFsoService _fileSystem;
+        private readonly IFileSystem _fileSystem;
         private readonly CancellationTokenSource _cancellationTokenSource;
 
         private IDisposable _watcher;
@@ -46,7 +46,7 @@ namespace EliteDangerous2SPADneXt.Script
 
         public EdStateImportScript()
         {
-            _fileSystem = new FsoService();
+            _fileSystem = new FileSystemAbstractions.FileSystem();
             _defaultStatusFileLocation = _fileSystem.CombinePath(
                 Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
                 "Saved Games", "Frontier Developments", "Elite Dangerous", "Status.json");

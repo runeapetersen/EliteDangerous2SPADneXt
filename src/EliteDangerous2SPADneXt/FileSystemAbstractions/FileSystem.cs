@@ -2,17 +2,7 @@
 
 namespace EliteDangerous2SPADneXt.FileSystemAbstractions
 {
-    public interface IFsoService
-    {
-        bool FileExists(string filePath);
-        Stream CreateFileStream(string filePath, FileMode fileMode, FileAccess fileAccess, FileShare fileShare);
-
-        string CombinePath(params string[] parts);
-        string GetDirectoryName(string path);
-        string ReadAllText(string path);
-    }
-
-    public class FsoService : IFsoService
+    public class FileSystem : IFileSystem
     {
         public bool FileExists(string filePath) => File.Exists(filePath);
         public Stream CreateFileStream(string filePath, FileMode fileMode, FileAccess fileAccess, FileShare fileShare) =>

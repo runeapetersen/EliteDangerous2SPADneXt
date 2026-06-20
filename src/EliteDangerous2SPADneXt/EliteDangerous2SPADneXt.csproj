@@ -28,7 +28,7 @@
     </PropertyGroup>
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
         <PlatformTarget>AnyCPU</PlatformTarget>
-        <DebugType>pdbonly</DebugType>
+        <DebugType>none</DebugType>
         <Optimize>true</Optimize>
         <OutputPath>bin\Release\</OutputPath>
         <DefineConstants>TRACE</DefineConstants>
@@ -59,7 +59,8 @@
         <Compile Include="ChangeHandling\UpdatedValue.cs" />
         <Compile Include="ChangeHandling\ValueDetails.cs" />
         <Compile Include="Configuration\OverrideFileContents.cs" />
-        <Compile Include="FileSystemAbstractions\FsoService.cs" />
+        <Compile Include="FileSystemAbstractions\FileSystem.cs" />
+        <Compile Include="FileSystemAbstractions\IFileSystem.cs" />
         <Compile Include="GameState\LegalState.cs" />
         <Compile Include="GameState\Status.cs" />
         <Compile Include="GameState\Destination.cs" />
@@ -72,7 +73,6 @@
         <Compile Include="Script\StatusConsumer.cs" />
     </ItemGroup>
     <ItemGroup>
-      <None Include="App.config" />
       <None Include="StrongName.snk" />
     </ItemGroup>
     <ItemGroup>
@@ -89,6 +89,24 @@
       <PackageReference Include="System.ValueTuple" Version="4.6.2" />
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets"/>
+    <Target Name="PostBuildMacros">
+  <GetAssemblyIdentity AssemblyFiles="$(TargetPath)">
+    <Output TaskParameter="Assemblies" ItemName="Targets" />
+  </GetAssemblyIdentity>
+  <ItemGroup>
+    <VersionNumber Include="@(Targets->'%(Version)')"/>
+  </ItemGroup>
+</Target>
+<PropertyGroup>
+  <PostBuildEventDependsOn>
+    $(PostBuildEventDependsOn);
+    PostBuildMacros;
+  </PostBuildEventDependsOn>    
+      <PostBuildEvent>if $(ConfigurationName) == Release (
+powershell Remove-Item '$(TargetDir)*.zip'
+powershell Compress-Archive -Path '$(TargetDir)*.dll' -DestinationPath '$(TargetDir)\EliteDangerous2SPADneXt_v@(VersionNumber).zip' -Force
+)</PostBuildEvent>
+</PropertyGroup>
     <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
          Other similar extension points exist, see Microsoft.Common.targets.
     <Target Name="BeforeBuild">
