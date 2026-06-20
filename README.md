@@ -18,7 +18,7 @@ See https://doc.elitedangereuse.fr/Status%20File/ for more details on the state 
     -   *Example*: If your game's `Status.json` indicates that the Docked state is set, it will appear in SPAD as `LOCAL:ED2SPADNEXT_EDFLAGS_DOCKED` with a value of `1`.
 2.  **Monitor Game State**: Once installed, open the SPAD.neXt variables panel or create rules to inspect the new variables. You can now use standard SPAD Logic and triggers based on this imported data (e.g., "IF `LOCAL:ED2SPADNEXT_EDFLAGS_LANDING_GEAR_DOWN` is True, THEN turn on a physical indicator light").
 3.  **Advanced Configuration**: By default, the script monitors `%userprofile%\Saved Games\Frontier Developments\Elite Dangerous\Status.json`. To change this location:
-    -   Locate the `location_override.json` file in the same directory as the script DLL.
+    -   Create a `location_override.json` file in the same directory as the script DLL.
     -   Edit it to specify your custom path:
 ```json
 {
