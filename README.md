@@ -29,3 +29,9 @@ See https://doc.elitedangereuse.fr/Status%20File/ for more details on the state 
 ## Limitations
 The script reads data exclusively from Elite Dangerous; it cannot send commands back into the game (use VJoy or similar middleware for that). Additionally, the variable mapping depends entirely on the structure of Frontier's `Status.json`; if they change the export format in future game updates, this script may require adjustments to remain compatible.
 The code was tested and developed on Windows 11 and might not work on other operating systems.
+
+## Building
+* Clone repository
+* Create a directory named `local` in the root of the newly cloned repository
+* Copy SPAD.Interfaces.dll from your SPAD.neXt installation folder to the new `local` directory
+* Open the solution file in the `src` directory and build the solution.
